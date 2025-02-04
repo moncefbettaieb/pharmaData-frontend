@@ -1,20 +1,29 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
-# Configurez un argument pour API_URL
+# Définition des arguments de build
 ARG API_URL
-# Configurez la variable d'environnement dans le conteneur
+
+# Variables d'environnement
 ENV API_URL=${API_URL}
 
 WORKDIR /app
+
+RUN apk add --no-cache python3 make g++
+
+# Installation des dépendances (optimisé pour le cache Docker)
 RUN rm -rf node_modules package-lock.json
 RUN rm -rf .output 
 COPY package*.json ./
 RUN npm install
+
+# Copie des fichiers de l'application
 COPY . .
 
-# Build du projet Nuxt
+# Build de l'application
 RUN npm run build
 
-# Lancer Nuxt en mode production
+# Exposition du port
 EXPOSE 3000
+
+# Commande de démarrage
 CMD ["npm", "run", "start"]

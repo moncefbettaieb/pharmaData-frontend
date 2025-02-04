@@ -35,5 +35,13 @@ export default defineNuxtConfig({
       },
       stripePublicKey: process.env.STRIPE_PUBLIC_KEY
     }
+  },
+  build: {
+    transpile: ['vue-toastification']
+  },
+  vite: {
+    define: {
+      'process.env.ES_BUILD': 'false'
+    }
   }
 })
