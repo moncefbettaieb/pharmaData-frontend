@@ -21,7 +21,7 @@ export const useProductsStore = defineStore('products', {
       this.error = null
       try {
         const config = useRuntimeConfig()
-        const response = await fetch(`${config.public.apiBaseUrl}/products`, {
+        const response = await fetch(`${config.public.apiBaseUrl}/api/v1/products`, {
           headers: {
             'Authorization': `Bearer ${config.public.apiToken}`
           }

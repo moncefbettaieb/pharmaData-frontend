@@ -15,7 +15,7 @@ export const usePaymentStore = defineStore('payment', {
       
       try {
         const config = useRuntimeConfig()
-        const response = await fetch(`${config.public.apiBaseUrl}/create-checkout-session`, {
+        const response = await fetch(`${config.public.apiBaseUrl}/api/v1/create-checkout-session`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

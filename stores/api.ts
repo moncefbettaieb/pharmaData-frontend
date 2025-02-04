@@ -49,7 +49,7 @@ export const useApiStore = defineStore('api', {
       this.error = null
       try {
         const config = useRuntimeConfig()
-        const response = await fetch(`${config.public.apiBaseUrl}/generate-token`, {
+        const response = await fetch(`${config.public.apiBaseUrl}/api/v1/generate-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ export const useApiStore = defineStore('api', {
       this.error = null
       try {
         const config = useRuntimeConfig()
-        const response = await fetch(`${config.public.apiBaseUrl}/revoke-token`, {
+        const response = await fetch(`${config.public.apiBaseUrl}/api/v1/revoke-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ export const useApiStore = defineStore('api', {
       this.error = null
       try {
         const config = useRuntimeConfig()
-        const response = await fetch(`${config.public.apiBaseUrl}/api-usage`, {
+        const response = await fetch(`${config.public.apiBaseUrl}/api/v1/api-usage`, {
           headers: {
             'Authorization': `Bearer ${useAuthStore().user?.accessToken}`
           }
