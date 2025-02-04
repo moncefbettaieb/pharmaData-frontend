@@ -1,149 +1,65 @@
 <template>
-    <div>
-      <h1>Test de l'API - Authentification & Subscription</h1>
-  
-      <!-- Formulaire d'inscription -->
-      <section>
-        <h2>Inscription</h2>
-        <form @submit.prevent="registerUser">
-          <input v-model="registerEmail" type="email" placeholder="Email" required />
-          <input v-model="registerPassword" type="password" placeholder="Password" required />
-          <button type="submit">S'inscrire</button>
-        </form>
-        <pre v-if="registerResult">{{ registerResult }}</pre>
-      </section>
-  
-      <!-- Formulaire de connexion -->
-      <section>
-        <h2>Connexion</h2>
-        <form @submit.prevent="loginUser">
-          <input v-model="loginEmail" type="email" placeholder="Email" required />
-          <input v-model="loginPassword" type="password" placeholder="Password" required />
-          <button type="submit">Se connecter</button>
-        </form>
-        <p v-if="token">Token: {{ token }}</p>
-        <pre v-if="loginResult">{{ loginResult }}</pre>
-      </section>
-  
-      <!-- Appel au service protégé subscription/me -->
-      <section v-if="token">
-        <h2>Mon Abonnement</h2>
-        <button @click="fetchSubscription">Obtenir Mon Abonnement</button>
-        <pre v-if="subscriptionResult">{{ subscriptionResult }}</pre>
-      </section>
+  <main>
+    <!-- Hero Section -->
+    <div class="relative isolate">
+      <div class="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+            Plateforme de Données Pharmaceutiques Professionnelles
+          </h1>
+          <p class="mt-6 text-lg leading-8 text-gray-600">
+            Accédez à des données complètes sur les produits pharmaceutiques et parapharmaceutiques. Achetez des fiches produits individuelles ou abonnez-vous à notre API pour une intégration transparente.
+          </p>
+          <div class="mt-10 flex items-center justify-center gap-x-6">
+            <NuxtLink to="/products" class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+              Parcourir les Produits
+            </NuxtLink>
+            <NuxtLink to="/api-plans" class="text-sm font-semibold leading-6 text-gray-900">
+              Voir les Plans API <span aria-hidden="true">→</span>
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
     </div>
-  </template>
-  
-  <script setup lang="ts">
-  import { ref } from 'vue'
-  import { useRuntimeConfig } from '#app'
 
-  const registerEmail = ref('')
-  const registerPassword = ref('')
-  const registerResult = ref<any>(null)
-  
-  const loginEmail = ref('')
-  const loginPassword = ref('')
-  const loginResult = ref<any>(null)
-  const token = ref<string| null>(null)
-  
-  const subscriptionResult = ref<any>(null)
-  
-  const config = useRuntimeConfig();
-  console.log('config: ', config);
-  console.log('config.public: ', config.public);
-
-  // Utilisez runtimeConfig.public.apiBase comme source de vérité
-  const API_URL = config.public.apiBase;
-  const apiBaseTest = config.public.apiBaseTest;
-  const apiBaseTest2 = config.public.apiBaseTest2;
-
-  console.log('API_URL from config:', API_URL);
-  console.log('API_URL from config test:', apiBaseTest);
-  console.log('API_URL from config test2:', apiBaseTest2);
-  
-  async function registerUser() {
-    const res = await fetch(`${API_URL}/api/v1/users/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: registerEmail.value,
-        password: registerPassword.value
-      })
-    })
-  
-    if (!res.ok) {
-      const err = await res.json()
-      registerResult.value = err
-      return
-    }
-    const data = await res.json()
-    registerResult.value = data
-  }
-  
-  async function loginUser() {
-    // Selon votre implémentation backend, 
-    // si vous utilisez OAuth2PasswordRequestForm, 
-    // le "username" = email, "password" = password.
-    const formData = new FormData()
-    formData.append('username', loginEmail.value)
-    formData.append('password', loginPassword.value)
-    
-    const res = await fetch(`${API_URL}/api/v1/auth/login`, {
-      method: 'POST',
-      body: formData
-    })
-  
-    if (!res.ok) {
-      const err = await res.json()
-      loginResult.value = err
-      return
-    }
-  
-    const data = await res.json()
-    loginResult.value = data
-    token.value = data.access_token
-  }
-  
-  async function fetchSubscription() {
-    if (!token.value) return
-  
-    const res = await fetch(`${API_URL}/api/v1/subscription/me`, {
-      headers: {
-        'Authorization': `Bearer ${token.value}`
-      }
-    })
-  
-    if (!res.ok) {
-      const err = await res.json()
-      subscriptionResult.value = err
-      return
-    }
-  
-    const data = await res.json()
-    subscriptionResult.value = data
-  }
-  </script>
-  
-  <style scoped>
-  h1, h2 {
-    font-family: Arial, sans-serif;
-  }
-  
-  section {
-    margin-bottom: 20px;
-  }
-  
-  input {
-    display: block;
-    margin-bottom: 10px;
-  }
-  
-  pre {
-    background: #f5f5f5;
-    padding: 10px;
-  }
-  </style>
-  
+    <!-- Features Section -->
+    <div class="bg-white py-24 sm:py-32">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl lg:text-center">
+          <h2 class="text-base font-semibold leading-7 text-indigo-600">Plateforme de Données</h2>
+          <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            Tout ce dont vous avez besoin pour vos données pharmaceutiques
+          </p>
+        </div>
+        <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+          <dl class="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
+            <div class="flex flex-col">
+              <dt class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                Fiches Produits
+              </dt>
+              <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
+                <p class="flex-auto">Accédez aux informations détaillées des produits pharmaceutiques à 0,70€ par fiche</p>
+              </dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                Accès API
+              </dt>
+              <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
+                <p class="flex-auto">Choisissez parmi différents quotas API en commençant par 100 requêtes gratuites</p>
+              </dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                Plateforme Sécurisée
+              </dt>
+              <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
+                <p class="flex-auto">Authentification et paiements sécurisés avec Firebase et Stripe</p>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </main>
+</template>
