@@ -44,7 +44,7 @@ jobs:
         gcloud run deploy pharmadata-frontend-staging \
           --image europe-west9-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cloud-run-source-deploy/pharmadatafrontend/pharmadatafrontend:$GITHUB_SHA \
           --platform managed \
-          --region europe-west1 \
+          --region europe-west9 \
           --set-env-vars ENVIRONMENT=staging \
           --set-env-vars API_URL=${{ secrets.STAGING_API_URL }} \
           --allow-unauthenticated
@@ -57,6 +57,6 @@ jobs:
         gcloud run deploy pharmadata-frontend-prod \
           --image europe-west9-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cloud-run-source-deploy/pharmadatafrontend/pharmadatafrontend:$GITHUB_SHA \
           --platform managed \
-          --region europe-west1 \
+          --region europe-west9 \
           --set-env-vars API_URL=${{ secrets.PROD_API_URL }} \
           --allow-unauthenticated
