@@ -1,7 +1,7 @@
 import express from 'express'
 import Stripe from 'stripe'
+import { getFirestore } from 'firebase-admin/firestore'
 import { authenticateToken } from '../middleware/auth'
-import { pool } from '../db'
 
 const router = express.Router()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -11,16 +11,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 router.post('/create-checkout-session', authenticateToken, async (req, res) => {
   try {
     const { items } = req.body
+    const db = getFirestore()
 
-    // Récupérer les détails des produits depuis la base de données
+    // Récupérer les détails des produits depuis Firestore
     const productDetails = await Promise.all(
       items.map(async (item: { productId: string; quantity: number }) => {
-        const result = await pool.query(
-          'SELECT name, price FROM products WHERE id = $1',
-          [item.productId]
-        )
+        const productDoc = await db.collection('products').doc(item.productId).get()
+        const productData = productDoc.data()
         return {
-          ...result.rows[0],
+          ...productData,
           quantity: item.quantity
         }
       })
@@ -43,7 +42,7 @@ router.post('/create-checkout-session', authenticateToken, async (req, res) => {
       success_url: `${process.env.FRONTEND_URL}/payment/success`,
       cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
       metadata: {
-        userId: req.user.id, // Ajouté depuis le middleware d'authentification
+        userId: req.user.uid,
       },
     })
 
@@ -72,12 +71,16 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
 
-    // Enregistrer la commande dans la base de données
+    // Enregistrer la commande dans Firestore
     try {
-      await pool.query(
-        'INSERT INTO orders (user_id, stripe_session_id, amount) VALUES ($1, $2, $3)',
-        [session.metadata?.userId, session.id, session.amount_total! / 100]
-      )
+      const db = getFirestore()
+      await db.collection('orders').add({
+        userId: session.metadata?.userId,
+        stripeSessionId: session.id,
+        amount: session.amount_total! / 100,
+        status: 'completed',
+        createdAt: new Date()
+      })
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement de la commande:', error)
     }

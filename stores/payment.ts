@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { loadStripe } from '@stripe/stripe-js'
+import { getFirestore, collection, addDoc } from 'firebase/firestore'
 
 export const usePaymentStore = defineStore('payment', {
   state: () => ({
@@ -18,7 +19,7 @@ export const usePaymentStore = defineStore('payment', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${config.public.apiToken}`
+            'Authorization': `Bearer ${useAuthStore().user?.accessToken}`
           },
           body: JSON.stringify({ items })
         })
@@ -43,6 +44,25 @@ export const usePaymentStore = defineStore('payment', {
         throw error
       } finally {
         this.loading = false
+      }
+    },
+
+    async saveOrder(sessionId: string, amount: number) {
+      const { $firebase } = useNuxtApp()
+      const db = getFirestore($firebase)
+      const authStore = useAuthStore()
+
+      try {
+        await addDoc(collection(db, 'orders'), {
+          userId: authStore.user?.uid,
+          stripeSessionId: sessionId,
+          amount,
+          status: 'completed',
+          createdAt: new Date()
+        })
+      } catch (error: any) {
+        console.error('Erreur lors de l\'enregistrement de la commande:', error)
+        throw error
       }
     }
   }

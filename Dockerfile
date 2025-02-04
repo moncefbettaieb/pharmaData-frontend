@@ -1,10 +1,10 @@
 FROM node:22-alpine
 
 # Définition des arguments de build
-ARG API_URL
+ARG API_BASE_URL
 
 # Variables d'environnement
-ENV API_URL=${API_URL}
+ENV API_BASE_URL=${API_BASE_URL}
 
 WORKDIR /app
 
