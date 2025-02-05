@@ -23,7 +23,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:3000/api',
+      apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:5001/votre-projet/us-central1',
+      stripePublicKey: process.env.STRIPE_PUBLIC_KEY,
       firebaseConfig: {
         apiKey: process.env.FIREBASE_API_KEY,
         authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -32,8 +33,7 @@ export default defineNuxtConfig({
         messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
         appId: process.env.FIREBASE_APP_ID,
         measurementId: process.env.FIREBASE_MEASUREMENT_ID
-      },
-      stripePublicKey: process.env.STRIPE_PUBLIC_KEY
+      }
     }
   },
   build: {

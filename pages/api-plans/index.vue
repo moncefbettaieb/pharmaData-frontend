@@ -45,10 +45,11 @@
           </div>
           <button
             @click="selectPlan(plan)"
-            :disabled="!user"
+            :disabled="!user || loading"
             class="mt-8 block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ user ? 'Sélectionner ce plan' : 'Connectez-vous pour souscrire' }}
+            <span v-if="loading">Chargement...</span>
+            <span v-else>{{ user ? 'Sélectionner ce plan' : 'Connectez-vous pour souscrire' }}</span>
           </button>
         </div>
       </div>
@@ -68,24 +69,53 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth'
 import { usePlansStore } from '~/stores/plans'
-import { usePaymentStore } from '~/stores/payment'
-import { storeToRefs } from 'pinia'
 import { useToast } from 'vue-toastification'
+import { loadStripe } from '@stripe/stripe-js'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 
 const authStore = useAuthStore()
 const plansStore = usePlansStore()
-const paymentStore = usePaymentStore()
 const { user } = storeToRefs(authStore)
 const toast = useToast()
+const config = useRuntimeConfig()
+const loading = ref(false)
 
 const selectPlan = async (plan) => {
+  if (!user.value) {
+    toast.error('Veuillez vous connecter pour souscrire à un plan')
+    return
+  }
+
+  loading.value = true
   try {
-    await paymentStore.createCheckoutSession([{
-      productId: plan.id,
-      quantity: 1
-    }])
+    const { $firebase } = useNuxtApp()
+    const functions = getFunctions($firebase, 'europe-west9')
+    const createSubscriptionCall = httpsCallable(functions, 'createSubscription')
+
+    const { data } = await createSubscriptionCall({
+      priceId: plan.id,
+      successUrl: `${window.location.origin}/payment/success`,
+      cancelUrl: `${window.location.origin}/payment/cancel`
+    })
+
+    // Rediriger vers Stripe Checkout
+    const stripe = await loadStripe(config.public.stripePublicKey)
+    if (!stripe) {
+      throw new Error('Erreur lors du chargement de Stripe')
+    }
+
+    const { error } = await stripe.redirectToCheckout({ 
+      sessionId: data.sessionId 
+    })
+    
+    if (error) {
+      throw error
+    }
   } catch (error) {
+    console.error('Erreur:', error)
     toast.error("Une erreur s'est produite lors de la redirection vers le paiement")
+  } finally {
+    loading.value = false
   }
 }
 </script>
