@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 
 interface Product {
-  id: string
-  name: string
-  description: string
+  cip_code: string
+  title: string
+  brand: string
   image_url: string
   price: number
 }
