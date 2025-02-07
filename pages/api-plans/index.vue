@@ -89,33 +89,6 @@ const selectPlan = async (plan) => {
   }
 
   loading.value = true
-
-  const testStripeConfig = async () => {
-  try {
-    // Vérifier la clé publique
-    if (!config.public.stripePublicKey) {
-      throw new Error('Clé publique Stripe manquante')
-    }
-
-    // Tester l'initialisation de Stripe
-    const stripe = await loadStripe(config.public.stripePublicKey)
-    if (!stripe) {
-      throw new Error('Échec de l\'initialisation de Stripe')
-    }
-
-    // Vérifier la connexion aux Cloud Functions
-    if (!$functions) {
-      throw new Error('Firebase Functions non initialisé')
-    }
-
-    toast.success('Configuration Stripe OK')
-    console.log('Stripe initialisé avec succès')
-  } catch (error) {
-    console.error('Erreur de configuration Stripe:', error)
-    toast.error(`Erreur de configuration: ${error.message}`)
-  }
-}
-
   try {
     if (!$functions) {
       throw new Error('Firebase Functions non initialisé')
@@ -153,9 +126,5 @@ const selectPlan = async (plan) => {
   } finally {
     loading.value = false
   }
-
-  onMounted(() => {
-  testStripeConfig()
-})
 }
 </script>
