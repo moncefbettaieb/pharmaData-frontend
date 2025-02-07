@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
   
   // Only initialize Firebase if we have the required config
@@ -12,7 +13,8 @@ export default defineNuxtPlugin(() => {
       provide: {
         firebase: null,
         auth: null,
-        db: null
+        db: null,
+        functions: null
       }
     }
   }
@@ -21,12 +23,19 @@ export default defineNuxtPlugin(() => {
     const app = initializeApp(config.public.firebaseConfig)
     const auth = getAuth(app)
     const db = getFirestore(app)
+    const functions = getFunctions(app, 'europe-west9')
+
+    // En développement, connecter à l'émulateur si nécessaire
+    if (process.dev) {
+      connectFunctionsEmulator(functions, 'localhost', 5001)
+    }
     
     return {
       provide: {
         firebase: app,
         auth,
-        db
+        db,
+        functions
       }
     }
   } catch (error) {
@@ -35,7 +44,8 @@ export default defineNuxtPlugin(() => {
       provide: {
         firebase: null,
         auth: null,
-        db: null
+        db: null,
+        functions: null
       }
     }
   }

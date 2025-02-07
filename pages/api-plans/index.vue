@@ -71,7 +71,8 @@ import { useAuthStore } from '~/stores/auth'
 import { usePlansStore } from '~/stores/plans'
 import { useToast } from 'vue-toastification'
 import { loadStripe } from '@stripe/stripe-js'
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import { httpsCallable } from 'firebase/functions'
+import { storeToRefs } from 'pinia'
 
 const authStore = useAuthStore()
 const plansStore = usePlansStore()
@@ -79,6 +80,7 @@ const { user } = storeToRefs(authStore)
 const toast = useToast()
 const config = useRuntimeConfig()
 const loading = ref(false)
+const { $functions } = useNuxtApp()
 
 const selectPlan = async (plan) => {
   if (!user.value) {
@@ -87,35 +89,73 @@ const selectPlan = async (plan) => {
   }
 
   loading.value = true
+
+  const testStripeConfig = async () => {
   try {
-    const { $firebase } = useNuxtApp()
-    const functions = getFunctions($firebase, 'europe-west9')
-    const createSubscriptionCall = httpsCallable(functions, 'createSubscription')
+    // Vérifier la clé publique
+    if (!config.public.stripePublicKey) {
+      throw new Error('Clé publique Stripe manquante')
+    }
 
-    const { data } = await createSubscriptionCall({
-      priceId: plan.id,
-      successUrl: `${window.location.origin}/payment/success`,
-      cancelUrl: `${window.location.origin}/payment/cancel`
-    })
+    // Tester l'initialisation de Stripe
+    const stripe = await loadStripe(config.public.stripePublicKey)
+    if (!stripe) {
+      throw new Error('Échec de l\'initialisation de Stripe')
+    }
 
-    // Rediriger vers Stripe Checkout
+    // Vérifier la connexion aux Cloud Functions
+    if (!$functions) {
+      throw new Error('Firebase Functions non initialisé')
+    }
+
+    toast.success('Configuration Stripe OK')
+    console.log('Stripe initialisé avec succès')
+  } catch (error) {
+    console.error('Erreur de configuration Stripe:', error)
+    toast.error(`Erreur de configuration: ${error.message}`)
+  }
+}
+
+  try {
+    if (!$functions) {
+      throw new Error('Firebase Functions non initialisé')
+    }
+
+    // Initialiser Stripe
     const stripe = await loadStripe(config.public.stripePublicKey)
     if (!stripe) {
       throw new Error('Erreur lors du chargement de Stripe')
     }
 
-    const { error } = await stripe.redirectToCheckout({ 
-      sessionId: data.sessionId 
+    // Appeler la Cloud Function
+    const createSubscriptionCall = httpsCallable($functions, 'createSubscription')
+    const result = await createSubscriptionCall({
+      priceId: plan.id,
+      successUrl: `${window.location.origin}/payment/success`,
+      cancelUrl: `${window.location.origin}/payment/cancel`
     })
-    
+
+    const { sessionId } = result.data
+    if (!sessionId) {
+      console.error('Réponse de la fonction:', result.data)
+      throw new Error('Session ID manquant dans la réponse')
+    }
+
+    // Rediriger vers Stripe Checkout
+    const { error } = await stripe.redirectToCheckout({ sessionId })
     if (error) {
+      console.error('Erreur Stripe:', error)
       throw error
     }
   } catch (error) {
-    console.error('Erreur:', error)
+    console.error('Erreur complète:', error)
     toast.error("Une erreur s'est produite lors de la redirection vers le paiement")
   } finally {
     loading.value = false
   }
+
+  onMounted(() => {
+  testStripeConfig()
+})
 }
 </script>

@@ -10,6 +10,7 @@ import {
   type User,
   updateProfile
 } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
 
 interface UserRegistration {
   email: string
@@ -30,12 +31,23 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const { $auth } = useNuxtApp()
+        const { $auth, $db } = useNuxtApp()
         if (!$auth) {
           throw new Error('Firebase authentication is not initialized')
         }
         const userCredential = await createUserWithEmailAndPassword($auth, email, password)
         await updateProfile(userCredential.user, { displayName })
+        
+        // Créer le document utilisateur dans Firestore
+        if ($db) {
+          await setDoc(doc($db, 'users', userCredential.user.uid), {
+            email,
+            displayName,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+        }
+        
         this.user = userCredential.user
       } catch (error: any) {
         this.error = this.getErrorMessage(error.code)
