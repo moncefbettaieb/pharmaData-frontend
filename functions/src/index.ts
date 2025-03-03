@@ -2,11 +2,9 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
-// Initialiser Firebase Admin avec les permissions explicites
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
-})
+// Initialiser Firebase Admin sans paramètres explicites
+// Cela utilisera automatiquement les credentials par défaut
+admin.initializeApp()
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16'
@@ -14,7 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 // Map des IDs de plans vers les IDs de prix Stripe
 const PRICE_MAP: { [key: string]: string } = {
-  'basic': 'prod_RibDkVUBfzGxfO', // Remplacez par vos vrais IDs de prix Stripe
+  'basic': 'prod_RibDkVUBfzGxfO',
   'pro': 'prod_RibEg7kJdwI522',
   'enterprise': 'prod_RibFR1RqX7xiXk'
 }
@@ -23,7 +21,8 @@ export const createSubscription = onCall({
   region: 'europe-west9',
   cors: [
     'https://pharmadata-frontend-staging-383194447870.europe-west9.run.app',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    '*' // Autoriser toutes les origines pendant le développement
   ],
   maxInstances: 10,
   memory: '256MiB'
@@ -37,22 +36,32 @@ export const createSubscription = onCall({
   if (!priceId || !successUrl || !cancelUrl) {
     throw new HttpsError('invalid-argument', 'Paramètres manquants')
   }
-
+  
   try {
     const stripePriceId = PRICE_MAP[priceId]
     if (!stripePriceId) {
       throw new HttpsError('invalid-argument', 'Plan invalide')
     }
-
+    
+    // Utiliser admin.firestore() directement
     const db = admin.firestore()
     
     // Créer ou récupérer le client Stripe
     let customer
     const userRef = db.collection('users').doc(request.auth.uid)
     const userDoc = await userRef.get()
-    const userData = userDoc.data()
+    
+    if (!userDoc.exists) {
+      // Créer le document utilisateur s'il n'existe pas
+      await userRef.set({
+        email: request.auth.token.email,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      })
+    }
+    
+    const userData = userDoc.data() || {}
 
-    if (userData?.stripeCustomerId) {
+    if (userData.stripeCustomerId) {
       customer = await stripe.customers.retrieve(userData.stripeCustomerId)
     } else {
       customer = await stripe.customers.create({
@@ -63,10 +72,9 @@ export const createSubscription = onCall({
       })
       
       // Sauvegarder l'ID du client Stripe
-      await userRef.set({
-        stripeCustomerId: customer.id,
-        email: request.auth.token.email
-      }, { merge: true })
+      await userRef.update({
+        stripeCustomerId: customer.id
+      })
     }
 
     // Créer la session de paiement
@@ -86,10 +94,9 @@ export const createSubscription = onCall({
       }
     })
 
-    console.log('Session créée:', session.id)
     return { sessionId: session.id }
   } catch (error) {
     console.error('Erreur lors de la création de la session:', error)
-    throw new HttpsError('internal', 'Erreur lors de la création de la session de paiement')
+    throw new HttpsError('internal', 'Erreur lors de la création de la session de paiement', error)
   }
 })

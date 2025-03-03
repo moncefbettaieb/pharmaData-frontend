@@ -10,7 +10,7 @@ import {
   type User,
   updateProfile
 } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, getFirestore, serverTimestamp } from 'firebase/firestore'
 
 interface UserRegistration {
   email: string
@@ -27,27 +27,39 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   actions: {
+    async createUserDocument(user: User) {
+      const { $db } = useNuxtApp()
+      if (!$db) {
+        console.error('Firestore n\'est pas initialisé')
+        return
+      }
+
+      try {
+        const userRef = doc($db, 'users', user.uid)
+        await setDoc(userRef, {
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          createdAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp()
+        }, { merge: true })
+      } catch (error) {
+        console.error('Erreur lors de la création du document utilisateur:', error)
+        throw error
+      }
+    },
+
     async register({ email, password, displayName }: UserRegistration) {
       this.loading = true
       this.error = null
       try {
-        const { $auth, $db } = useNuxtApp()
+        const { $auth } = useNuxtApp()
         if (!$auth) {
           throw new Error('Firebase authentication is not initialized')
         }
         const userCredential = await createUserWithEmailAndPassword($auth, email, password)
         await updateProfile(userCredential.user, { displayName })
-        
-        // Créer le document utilisateur dans Firestore
-        if ($db) {
-          await setDoc(doc($db, 'users', userCredential.user.uid), {
-            email,
-            displayName,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          })
-        }
-        
+        await this.createUserDocument(userCredential.user)
         this.user = userCredential.user
       } catch (error: any) {
         this.error = this.getErrorMessage(error.code)
@@ -66,6 +78,7 @@ export const useAuthStore = defineStore('auth', {
           throw new Error('Firebase authentication is not initialized')
         }
         const userCredential = await signInWithEmailAndPassword($auth, email, password)
+        await this.createUserDocument(userCredential.user)
         this.user = userCredential.user
       } catch (error: any) {
         this.error = this.getErrorMessage(error.code)
@@ -85,6 +98,7 @@ export const useAuthStore = defineStore('auth', {
         }
         const provider = new GoogleAuthProvider()
         const userCredential = await signInWithPopup($auth, provider)
+        await this.createUserDocument(userCredential.user)
         this.user = userCredential.user
       } catch (error: any) {
         this.error = this.getErrorMessage(error.code)
@@ -127,6 +141,7 @@ export const useAuthStore = defineStore('auth', {
         }
         const credential = PhoneAuthProvider.credential(this.verificationId, code)
         const userCredential = await signInWithPhoneNumber($auth, credential)
+        await this.createUserDocument(userCredential.user)
         this.user = userCredential.user
         this.verificationId = null
       } catch (error: any) {

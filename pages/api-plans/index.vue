@@ -95,16 +95,19 @@ const selectPlan = async (plan) => {
     }
 
     // Initialiser Stripe
-    console.log('stripePublicKey : ', config.public.stripePublicKey)
     const stripe = await loadStripe(config.public.stripePublicKey)
     if (!stripe) {
-      console.error('Erreur lors du chargement de Stripe')
       throw new Error('Erreur lors du chargement de Stripe')
     }
 
     // Appeler la Cloud Function
     const createSubscriptionCall = httpsCallable($functions, 'createSubscription')
-    console.error('${window.location.origin}', `${window.location.origin}`)
+    
+    console.log('Appel de la fonction avec les paramètres:', {
+      priceId: plan.id,
+      successUrl: `${window.location.origin}/payment/success`,
+      cancelUrl: `${window.location.origin}/payment/cancel`
+    })
     
     const result = await createSubscriptionCall({
       priceId: plan.id,
@@ -112,6 +115,8 @@ const selectPlan = async (plan) => {
       cancelUrl: `${window.location.origin}/payment/cancel`
     })
 
+    console.log('Résultat de la fonction:', result)
+    
     const { sessionId } = result.data
     if (!sessionId) {
       console.error('Réponse de la fonction:', result.data)
@@ -132,3 +137,4 @@ const selectPlan = async (plan) => {
   }
 }
 </script>
+</template>
