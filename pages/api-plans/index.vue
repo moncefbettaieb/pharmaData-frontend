@@ -137,4 +137,3 @@ const selectPlan = async (plan) => {
   }
 }
 </script>
-</template>
