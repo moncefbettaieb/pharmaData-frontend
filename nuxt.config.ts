@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:5001/votre-projet/europe-west9',
+      apiBaseUrl: process.env.API_BASE_URL,
       stripePublicKey: process.env.STRIPE_PUBLIC_KEY || 'pk_test_sample_key',
       firebaseConfig: {
         apiKey: process.env.FIREBASE_API_KEY,
