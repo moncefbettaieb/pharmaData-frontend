@@ -94,6 +94,14 @@ const selectPlan = async (plan) => {
       throw new Error('Firebase Functions non initialisé')
     }
 
+    // Vérifier que la clé Stripe est disponible
+    if (!config.public.stripePublicKey) {
+      console.error('Clé publique Stripe manquante dans la configuration')
+      throw new Error('Configuration Stripe manquante')
+    }
+    
+    console.log('Clé publique Stripe:', config.public.stripePublicKey)
+
     // Initialiser Stripe
     const stripe = await loadStripe(config.public.stripePublicKey)
     if (!stripe) {
